@@ -17,6 +17,21 @@
 
 #define SERVO PORTCbits.RC2
 
+void vdelay_us(uint16_t us) {
+    for (uint16_t count = 0; count != us; count++) {
+        __delay_us(1);
+    }
+}
+
+void servo_zero() {
+    SERVO = 1;
+    __delay_us(1500);
+    SERVO = 0;
+    __delay_us(18500);
+}
+
+uint16_t serv_control = 100;
+
 void main() {
     OSCCON = 0x71;
     while (OSCCONbits.HTS == 0);
@@ -30,15 +45,10 @@ void main() {
     lcd_write_string("Bailaservo");
     
     while (1) {
-        SERVO = 1;
-        __delay_us(1000);
-        SERVO = 0;
-        __delay_us(19000);
-        __delay_ms(2000);
-        SERVO = 1;
-        __delay_us(2000);
-        SERVO = 0;
-        __delay_us(18000);
-        __delay_ms(2000);
+        servo_zero();
+        __delay_ms(1000);
+        for (uint8_t x = 1; uint8_t <= 9; x++) {
+            SERVO = 1;
+        }
     }
 }
