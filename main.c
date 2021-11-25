@@ -10,6 +10,7 @@
 #pragma config WDTE = 0
 #pragma config FOSC = 101
 
+#include <stdio.h>
 #include <stdint.h>
 #include "config.h"
 #include "lcd.h"
@@ -18,7 +19,7 @@
 #define SERVO PORTCbits.RC2
 #define SERVO_ZERO 500
 #define SERVO_PULSE 20000
-#define ORDER_LEN 1
+#define ORDER_LEN 5
 
 unsigned char key;
 uint8_t key_count = 0;
@@ -27,6 +28,9 @@ uint8_t order_count = 0;
 uint8_t orders[ORDER_LEN][2]; // First element = degrees. Second = time on pos.
 
 uint8_t servo_count = 0;
+uint16_t servo_loop = 0;
+
+char buffer[16];
 
 void read_instruction() {
     lcd_clear_display();
@@ -66,14 +70,41 @@ void read_instruction() {
             orders[order_count][1] = key;
         }
     }
-    __delay_ms(500);
+    __delay_ms(100);
 }
 
 void servo_zero() {
-    SERVO = 1;
-    __delay_us(SERVO_ZERO);
-    SERVO = 0;
-    __delay_us(SERVO_PULSE - SERVO_ZERO);
+    for (uint8_t count = 0; count != 50; count++) {
+        SERVO = 1;
+        __delay_us(SERVO_ZERO);
+        SERVO = 0;
+        __delay_us(SERVO_PULSE - SERVO_ZERO);  
+    }
+    
+}
+
+void servo_move() {
+    servo_loop = (uint16_t) (orders[order_count][1] / 0.02);
+    for (uint16_t x = 0; x != servo_loop; x++) {
+        servo_count = 0;
+        SERVO = 1;
+        __delay_us(500);
+        while (servo_count != orders[order_count][0]) {
+            __delay_us(1);
+            servo_count++;
+        }
+        SERVO = 0;
+        __delay_ms(18);
+    }
+}
+
+void  display_order() {
+    lcd_clear_display();
+    lcd_write_string("   Trabajando   ");
+    lcd_move_cursor(0x40);
+    sprintf(buffer, "   %03d - %d seg  ", 
+            orders[order_count][0], orders[order_count][1]);
+    lcd_write_string(buffer);
 }
 
 void main() {
@@ -86,7 +117,6 @@ void main() {
     lcd_init(true, false, false);
     keypad_init();
     lcd_clear_display();
-    servo_zero();
     
     while (1) {
         order_count = 0;
@@ -96,26 +126,34 @@ void main() {
         }
         lcd_display(true, false, false);
         lcd_clear_display();
-        lcd_write_string("   Trabajando   ");
+        
         
         order_count = 0;
         while (order_count != ORDER_LEN) {
-            servo_count = 0;
-            SERVO = 1;
-            __delay_us(500);
-            while (servo_count != orders[order_count][0]) {
-                __delay_us(1);
-                servo_count++;
-            }
-            SERVO = 0;
-            servo_count = 0;
-            while (servo_count != orders[order_count][1]) {
-                __delay_ms(1000);
-                servo_count++;
-            }
+            display_order();
+            servo_move();
             order_count++;
         }
-        
         servo_zero();
+        
+        lcd_clear_display();
+        lcd_write_string("Inicio: A");
+        lcd_move_cursor(0x40);
+        lcd_write_string("Ultima orden: D");
+        key = 0;
+        while (key != 'A') {
+            key = key_char(keypad_read());
+            if(key == 'D') {
+                order_count = 4;
+                display_order();
+                servo_move();
+                servo_zero();
+                
+                lcd_clear_display();
+                lcd_write_string("Reinicio: A");
+                lcd_move_cursor(0x40);
+                lcd_write_string("Ultima orden: D");
+            }
+        }
     }
 }
