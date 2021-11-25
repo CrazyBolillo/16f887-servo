@@ -17,8 +17,8 @@
 #define DEBOUNCE(x, code) __delay_ms(20); if (x == 0) {while (x == 0); return code;} 
 
 void keypad_init(void);
-char keypad_read(void);
-char key_char(char key);
+uint8_t keypad_read(void);
+unsigned char key_char(char key);
 uint8_t key_int(char key);
 
 #endif

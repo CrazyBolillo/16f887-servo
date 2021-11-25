@@ -25,8 +25,8 @@ static char column_read(void) {
     return 0;
 }
 
-char keypad_read(void) {
-    char col = 0;
+uint8_t keypad_read(void) {
+    uint8_t col = 0;
     
     ROW1 = 0;
     col = column_read();
@@ -59,7 +59,7 @@ char keypad_read(void) {
     return 0;
 }
 
-char key_char(char key) {
+unsigned char key_char(char key) {
     switch (key) {
         case 1: return '1';
         case 2: return '2';
